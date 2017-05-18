@@ -1,0 +1,30 @@
+//inputs: pc, is_request_data, 
+//output instruction-32bit , is_data_ready 
+
+//outputs:
+
+
+typedef struct packed	{
+	bit	[63:15]	tag;
+	bit	[14:6]	set;
+	bit	[5:0]	offset;
+} address;
+
+///Picking from memmory - 8 bytes(64 bits) at a time or 4bytes at a time - 1cycle - load 64 bits from mem into cache., 8 cycle - 1 line gets loaded.
+
+///32bits at a time cache_line[]
+
+typedef struct packed   {
+        bit     [63:0]  instructions[7:0];	// 8 instructions each of 32 bits
+        bit     [48:0]  tag;            // 49 bit tag
+        bit             valid;          // state depicting valid or invalid
+	bit		new;
+} cache_line;
+
+typedef struct packed {
+	cache_line line1 [1:0];
+} cache_set;
+
+typedef struct packed {
+	cache_set set [511:0]; //512 cache sets
+}cache;

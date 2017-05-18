@@ -1,0 +1,6 @@
+
+typedef struct packed	{
+	bit	[63:15]	tag;
+	bit	[14:6]	num_set;
+	bit	[5:0]	offset;
+} dcache_address;
