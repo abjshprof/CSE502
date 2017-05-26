@@ -262,9 +262,6 @@ enum {
 			SERVING_READ: begin
 					next_state=IDLE;
 			end
-			WRITE_READY: begin
-					next_state=SERVING_WRITE;
-			end
 			SERVING_WRITE: begin
 					next_state=IDLE;
 			end
@@ -305,71 +302,28 @@ enum {
 		nset=dtcache_memaddr.num_set; //later
 		nline=dcache[nset].lrul;
 		ndcache_offset=dtcache_memaddr.offset[5:3];
+		ndcache_tag=dtcache_memaddr.tag;
 		nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
+		nis_new=;
+		ndcache_wdata=de;
 
 		case(next_state)
 			IDLE: begin
-				ndcache_bus_reqcyc=0;
-				ndcache_bus_respack=0;
-				ndcache_bus_req = 0;
-				ndcache_bus_reqtag = 0;
-				nodcache_read_done=0;
-				nodcache_write_done=0;
-				nodcache_write_ready=0;
 				nfill_count=0;
-				nevict_count=0;
-				ndcache_do_write=0;
-				nset=dtcache_memaddr.num_set; //later
-				nline=dcache[nset].lrul;
-				ndcache_offset=dtcache_memaddr.offset[5:3];
-				nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 			end
 			REQUESTING_DATA: begin
 				ndcache_bus_reqcyc=1;
-				ndcache_bus_respack=0;
 				ndcache_bus_req=dtcache_memaddr & ig_hword;
 				ndcache_bus_reqtag = `SYSBUS_READ << 12 | `SYSBUS_MEMORY << 8;
-				nodcache_read_done=0;
-				nodcache_write_done=0;
-				nodcache_write_ready=0;
-				nfill_count=0;
-				nevict_count=0;
-				ndcache_do_write=0;
-				nset=dtcache_memaddr.num_set; //later
-				nline=dcache[nset].lrul;
-				ndcache_offset=dtcache_memaddr.offset[5:3];
-				nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 			end
 			WAITING_FOR_DATA: begin
-				ndcache_bus_reqcyc=0;
-				ndcache_bus_respack=0;
-				ndcache_bus_req = 0;
-				ndcache_bus_reqtag = 0;
-				nodcache_read_done=0;
-				nodcache_write_done=0;
-				nodcache_write_ready=0;
-				nfill_count=0;
-				nevict_count=0;
-				ndcache_do_write=0;
 				nset=dtcache_memaddr.num_set; //later
-				nline=dcache[nset].lrul;
-				ndcache_offset=dtcache_memaddr.offset[5:3];
-				nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 			end
 			FILLING_DATA: begin //from mem into cache
-				ndcache_bus_reqcyc=0;
-				ndcache_bus_req = 0;
-				ndcache_bus_reqtag = 0;
-				nodcache_read_done=0;
-				nodcache_write_done=0;
-				nodcache_write_ready=0;
 				ndcache_do_write=1;
-				nset=dtcache_memaddr.num_set;
-				nline=dcache[dtcache_memaddr.num_set].lrul;
 				ndcache_offset=fill_count;
 				ndcache_wdata=dcache_bus_resp[63:0];
-				ndcache_tag=dtcache_memaddr.tag;//doesn't matter untill count is 8
-				nevict_count=0;
+				//ndcache_tag=dtcache_memaddr.tag;//doesn't matter untill count is 8
 				nfill_count=fill_count+1;
 				if(nfill_count <8) begin
 					ndcache_bus_respack=1;
@@ -383,7 +337,6 @@ enum {
 					ndcache_isnew=0;
 					nlrul=~nline;
 				end
-				nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 			end
 			INVALIDATING: begin
 				ndcache_bus_reqcyc=0;
@@ -395,17 +348,8 @@ enum {
 				nodcache_write_done=0;
 			end
 			SERVING_READ: begin
-				ndcache_bus_reqcyc=0;
-				ndcache_bus_respack=0;
-				ndcache_bus_req = 0;
-				ndcache_bus_reqtag = 0;
 				nodcache_read_done=1;
-				nodcache_write_ready=0;
-				nodcache_write_done=0;
 				ndcache_do_write=1;
-				nset=dtcache_memaddr.num_set;
-				ndcache_offset=dtcache_memaddr.offset[5:3];
-				ndcache_wdata=dcache[nset].line[nline].data[ndcache_offset];
 				ndcache_tag=dcache[nset].line[nline].tag;
 				ndcache_isnew=dcache[nset].line[nline].is_new;
 				ndcache_valid=dcache[nset].line[nline].valid;
@@ -429,31 +373,11 @@ enum {
 					DWORD:
 						nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 				endcase
-				nfill_count=0;
-				nevict_count=0;
-			end
-			WRITE_READY: begin
-				ndcache_bus_reqcyc=0;
-				ndcache_bus_respack=0;
-				nodcache_read_done=0;
-				nodcache_write_done=0;
-				nodcache_write_ready=1;
-				ndcache_do_write=0;
-				nfill_count=0;
-				nevict_count=0;
 			end
 			SERVING_WRITE: begin
-				ndcache_bus_reqcyc=0;
-				ndcache_bus_respack=0;
-				ndcache_bus_req = 0;
-				ndcache_bus_reqtag = 0;
-				nodcache_read_done=0;
 				nodcache_write_done=1;
-				nodcache_write_ready=0;
 				ndcache_do_write=1;
-				nset=dtcache_memaddr.num_set;
-				ndcache_offset=dtcache_memaddr.offset[5:3];
-				//ndcache_tag=dcache[nset].line[nline].tag; //what is it was just evicted?
+				ndcache_tag=dcache[nset].line[nline].tag; //what is it was just evicted?
 				if ((dcache[nset].line[0].tag == dtcache_memaddr.tag)&& (dcache[nset].line[0].valid)) begin
 					nline=0;
 				end
@@ -462,7 +386,6 @@ enum {
 				end
 				else
 					$finish; //this is fatal;
-				ndcache_tag=dtcache_memaddr.tag;//alwyays set to tag from mem
 				ndcache_isnew=1;
 				ndcache_valid=1;
 				nlrul=~nline;
@@ -477,23 +400,13 @@ enum {
 					DWORD:
 					   ndcache_wdata=(dcache_memidata);
 				endcase
-				nfill_count=0;
-				nevict_count=0;
-				nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 			end
 			EVICTING: begin
 				ndcache_bus_reqcyc=1;
-				ndcache_bus_respack=0;
 				ndcache_bus_reqtag = `SYSBUS_WRITE << 12 | `SYSBUS_MEMORY << 8;
-				nset=dtcache_memaddr.num_set;
-				nline=dcache[nset].lrul;
 				ndcache_bus_req=dcache[nset].line[nline].data[evict_count];
 				//ndcache_offset=dtcache_memaddr.offset[5:3];
 				ndcache_offset=evict_count;
-				nodcache_read_done=0;
-				nodcache_write_done=0;
-				nodcache_write_ready=0;
-				nfill_count=0;
 				nevict_count=evict_count+1;
 				if(nevict_count < 8) begin
 					ndcache_do_write=0;
@@ -506,23 +419,11 @@ enum {
 					ndcache_isnew=0;
 					nlrul=nline; //this line must be overwritten now
 				end
-				nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 			end
 			EVICT_WAITING_FOR_RESPONSE: begin
 				ndcache_bus_reqcyc=1;
-				ndcache_bus_respack=0;
-				nset=dtcache_memaddr.num_set;
-				nline=dcache[nset].lrul;
-				ndcache_offset=dtcache_memaddr.offset[5:3];
 				ndcache_bus_req={dcache[nset].line[nline].tag, nset[8:0]};
 				ndcache_bus_reqtag = `SYSBUS_WRITE << 12 | `SYSBUS_MEMORY << 8;
-				nodcache_read_done=0;
-				nodcache_write_done=0;
-				nodcache_write_ready=0;
-				ndcache_do_write=0;
-				nfill_count=0;
-				nevict_count=0;
-				nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
 			end
 			REQUESTING_BUS:	begin
 				ndcache_bus_assert=1;
