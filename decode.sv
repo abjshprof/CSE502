@@ -9,6 +9,7 @@ module decode
 	input   [0:0]   dc_is_inst_valid,
 	input   [0:0]   dc_stall,
 	input		dc_undo_ldst_ec_stall,
+	input		dc_is_branch_taken,
 
 	output		odc_ldst_ec_stall,
 	output  [31:0]  odc_instrux,
@@ -45,13 +46,13 @@ HANDLE SIGN EXTENDED IMMEDIATEs
 
 
 	logic [6:0] nopcode;
-	logic [4:0] nwrite_reg;
-	logic [63:0] nimm;
-	logic [10:0] noperation;
-	logic [0:0] nis_inst_regwrite, nldst_ec_stall, nis_ld_st_ecall_inst;
-	logic [0:0] nis_inst_memread, nodc_is_ecall_inst;
+	logic [4:0] nwrite_reg, nod_write_reg_num;
+	logic [63:0] nimm, nod_pc, nod_imm;
+	logic [10:0] noperation, nod_operation;
+	logic [0:0] nis_inst_regwrite, nldst_ec_stall, nod_is_inst_valid, nodc_ldst_ec_stall, nodc_is_ecall_inst2, nod_is_ld_st_ecall_inst;
+	logic [0:0] nis_inst_memread, nodc_is_ecall_inst, nod_is_inst_regwrite, nod_is_inst_memread, nod_is_inst_memwrite;
 	logic [0:0] nis_inst_memwrite;		
-
+	logic [31:0] nodc_instrux;
 	
 	bit signed [11:0] offset;
 	bit signed [19:0] offset_jali;
@@ -561,13 +562,13 @@ HANDLE SIGN EXTENDED IMMEDIATEs
 			nis_inst_regwrite = 0;
 			nis_inst_memread=0;
 			nis_inst_memwrite=0;
-			nimm={dc_instrux[31:31], dc_instrux[7:7],dc_instrux[30:25],dc_instrux[11:8]};
+			nimm={dc_instrux[31:31], dc_instrux[7:7],dc_instrux[30:25],dc_instrux[11:8]}*2;
 			nwrite_reg = 0;
 
 			offset = {dc_instrux[31:31], dc_instrux[7:7], dc_instrux[30:25],dc_instrux[11:8]};
 			//pcs = pc_value;
-			$display("BRANCH NOT IMPLEMENTED\n");
-			$finish;
+			//$display("BRANCH NOT IMPLEMENTED\n");
+			//$finish;
 			case(instr[14:12])
 				3'h0: begin
 					noperation = `BEQ;
@@ -637,8 +638,55 @@ HANDLE SIGN EXTENDED IMMEDIATEs
 		od_nis_inst_regwrite = nis_inst_regwrite;
 	end
 
+	always_comb begin
+		if (!dc_stall  && !odc_ldst_ec_stall && !dc_is_branch_taken) begin
+			nodc_is_ecall_inst2=nodc_is_ecall_inst;
+			nod_is_inst_valid=dc_is_inst_valid;
+			nod_pc = dc_pc;
+			nodc_instrux= dc_instrux;
+			nod_write_reg_num = nwrite_reg;
+			nod_imm = nimm;
+			nod_operation = noperation;
+			nod_is_inst_regwrite= nis_inst_regwrite;
+			nod_is_inst_memread=nis_inst_memread;
+	        	nod_is_inst_memwrite=nis_inst_memwrite;
+			nodc_ldst_ec_stall=nldst_ec_stall;
+			nod_is_ld_st_ecall_inst=nldst_ec_stall;
+		end	
+		else if (dc_stall || odc_ldst_ec_stall || dc_is_branch_taken)
+		begin
+			nod_is_inst_valid=0;
+			nodc_is_ecall_inst2=0;
+			nod_pc =0;
+			nodc_instrux=0;
+			nod_write_reg_num = 0;
+			nod_imm = 0;
+			nod_operation = 0;
+			nod_is_inst_regwrite= 0;
+			nod_is_inst_memread=0;
+	        	nod_is_inst_memwrite=0;
+			nod_is_ld_st_ecall_inst=0;
+			if (dc_undo_ldst_ec_stall)
+				nodc_ldst_ec_stall=0;
+			else
+				nodc_ldst_ec_stall=odc_ldst_ec_stall;
+		end
+	end
+
 	always_ff @ (posedge clk)
 	begin
+			od_is_inst_valid<=nod_is_inst_valid;
+			odc_is_ecall_inst<=nodc_is_ecall_inst2;
+			od_pc<=nod_pc;
+			odc_instrux <=nodc_instrux;
+			od_write_reg_num <= nod_write_reg_num;
+			od_imm <= nod_imm;
+			od_operation <= nod_operation;
+			od_is_inst_regwrite <= nod_is_inst_regwrite;
+			od_is_inst_memread <= nod_is_inst_memread;
+	        	od_is_inst_memwrite <=  nod_is_inst_memwrite;
+			od_is_ld_st_ecall_inst <= nod_is_ld_st_ecall_inst;
+			odc_ldst_ec_stall <= nodc_ldst_ec_stall;
 		if (dc_instrux) begin
 			$display("decode: %x %x",dc_pc, dc_instrux);
 			//if (!dc_stall)
@@ -646,38 +694,8 @@ HANDLE SIGN EXTENDED IMMEDIATEs
 			//else
 			//$display("Decode: Stall at %x %x", dc_pc, dc_instrux);
 		end
-		if (!dc_stall  && !odc_ldst_ec_stall) begin
-			odc_is_ecall_inst<=nodc_is_ecall_inst;
-			od_is_inst_valid<=dc_is_inst_valid;
-			od_pc <= dc_pc;
-			odc_instrux<= dc_instrux;
-			od_write_reg_num <= nwrite_reg;
-			od_imm <= nimm;
-			od_operation <= noperation;
-			od_is_inst_regwrite<= nis_inst_regwrite;
-			od_is_inst_memread<=nis_inst_memread;
-	        	od_is_inst_memwrite<=nis_inst_memwrite;
-			odc_ldst_ec_stall<=nldst_ec_stall;
-			od_is_ld_st_ecall_inst<=nldst_ec_stall;
-		end	
-		else if (dc_stall || odc_ldst_ec_stall)
-		begin
-			od_is_inst_valid<=0;
-			odc_is_ecall_inst<=0;
-			od_pc<=32'h0;
-			odc_instrux<=0;
-			od_write_reg_num <= 0;
-			od_imm <= 0;
-			od_operation <= 0;
-			od_is_inst_regwrite<= 0;
-			od_is_inst_memread<=0;
-	        	od_is_inst_memwrite<=0;
-			od_is_ld_st_ecall_inst<=0;
-			if (dc_undo_ldst_ec_stall)
-				odc_ldst_ec_stall<=0;
-			else
-				odc_ldst_ec_stall<=odc_ldst_ec_stall;
-		end
+
+		
 	end
 
 	initial 

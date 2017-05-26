@@ -460,20 +460,20 @@ module alu
 			`JALR 	: // 46
 			begin
 				signed_imm = $signed(alu_imm[11:0]);
-				intermediate_value = src1 + signed_imm;
+				intermediate_value = src1 + signed_imm -4;
 				intermediate_value[0] = 0;
-				oalu_branch_target = intermediate_value-4;
+				oalu_branch_target = intermediate_value;
 				oalu_is_branch_taken=1;
-				nalu_result = alu_pc + 4;	// write this value to the register
+				nalu_result = alu_pc;	// write this value to the register
 				
 			end
 			
 			`JAL 	: // 47
 			begin
-				signed_imm = $signed(alu_imm[11:0]);
-				oalu_branch_target = alu_pc + signed_imm -4;
+				signed_imm = $signed(alu_imm[19:0]);
+				oalu_branch_target = (alu_pc + signed_imm -4);
 				oalu_is_branch_taken=1;
-				nalu_result = alu_pc + 4;
+				nalu_result = alu_pc;
 			end
 			
 			`LB 	: // 48
@@ -570,7 +570,7 @@ module alu
 			
 			`BEQ : // 59
 			begin
-				if (src1 == src2)	begin
+				if ($signed(src1) == $signed(src2))	begin
 					signed_imm = $signed(alu_imm[11:0]);
 					oalu_branch_target = alu_pc + signed_imm -4;
 					oalu_is_branch_taken=1;
@@ -583,7 +583,7 @@ module alu
 			
 			`BNE : // 60
 			begin
-				if (src1 != src2)	begin
+				if ($signed(src1) != $signed(src2)) 	begin
 					signed_imm = $signed(alu_imm[11:0]);
 					oalu_branch_target = alu_pc + signed_imm -4;
 					oalu_is_branch_taken=1;

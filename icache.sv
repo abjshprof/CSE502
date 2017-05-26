@@ -166,6 +166,8 @@ icache_address itcache_memaddr;
 								next_state=IDLE;//not sure, idea is to serve read/write asap
 							end
 						end
+						else
+							next_state=IDLE;
 					end
 			end
 			SERVING_READ: begin

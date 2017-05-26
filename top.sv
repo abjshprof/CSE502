@@ -192,6 +192,7 @@ module top
 			.dc_is_inst_valid(id_is_inst_valid),
 			.dc_stall(is_hzstall),
 			.dc_undo_ldst_ec_stall(dc_undo_ldst_ec_stall),
+			.dc_is_branch_taken(fetch_is_branch_taken),
 			.odc_ldst_ec_stall(ftch_ldst_ec_stall),
 			.odc_instrux(ialu_instrux),
 			.od_pc(ialu_pc),
@@ -221,6 +222,8 @@ module top
 			.irf_write_the_register(irf_write_the_register),
 			.irf_write_reg_num(irf_write_reg_num),
 			.irf_write_data(irf_write_data),
+			.irf_ldst_ec_stall(ftch_ldst_ec_stall),
+			.irf_br_stall(fetch_is_branch_taken),
 			.orf_read_data0(ialu_read_data0),
 			.orf_read_data1(ialu_read_data1),
 			.orf_stall(is_hzstall)

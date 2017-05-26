@@ -61,13 +61,13 @@ enum {
 
 	logic[63:0] nmem_pc;
 	logic [31:0] nmem_instrux;
-	logic nmem_is_inst_valid, nmem_is_inst_regwrite, ndpw_mem_is_inst_memwrite, nis_mem_to_reg, nomem_is_ecall_inst;
+	logic nmem_is_inst_valid, nmem_is_inst_regwrite, ndpw_mem_is_inst_memwrite, nis_mem_to_reg, nomem_is_ecall_inst, nmem_is_ld_st_ecall_inst;
 
 	always_ff @ (posedge clk) begin
 		if(reset) 
 			mem_state<=NOMEM;
 		else begin
-		omem_is_ld_st_ecall_inst<=mem_is_ld_st_ecall_inst;
+		omem_is_ld_st_ecall_inst<=nmem_is_ld_st_ecall_inst;
 		mem_state<=next_mem_state;
 		omem_instrux <= nmem_instrux;
 		omem_pc <= nmem_pc;
@@ -100,7 +100,7 @@ enum {
 		case (mem_state)
 			NOMEM: begin
 				if(mem_is_inst_memread || mem_is_inst_memwrite) begin
-					if ((!mem_read_done) || (!mem_write_done)) 
+					if ((!mem_read_done) && (!mem_write_done)) 
 						next_mem_state=WAITING_FOR_MEM;
 					else if(mem_read_done)
 						 next_mem_state=MEM_READ_DONE;
@@ -120,7 +120,7 @@ enum {
 			end	
 			MEM_READ_DONE:begin
 				if(mem_is_inst_memread || mem_is_inst_memwrite) begin
-					if ((!mem_read_done) || (!mem_write_done)) 
+					if ((!mem_read_done) && (!mem_write_done)) 
 						next_mem_state=WAITING_FOR_MEM;
 					else if(mem_read_done)
 						 next_mem_state=MEM_READ_DONE;
@@ -132,7 +132,7 @@ enum {
 			end
 			MEM_WRITE_DONE:begin
 				if(mem_is_inst_memread || mem_is_inst_memwrite) begin
-					if ((!mem_read_done) || (!mem_write_done)) 
+					if ((!mem_read_done) && (!mem_write_done)) 
 						next_mem_state=WAITING_FOR_MEM;
 					else if(mem_read_done)
 						 next_mem_state=MEM_READ_DONE;
@@ -148,6 +148,7 @@ enum {
 	always_comb begin
 		case (next_mem_state)
 			WAITING_FOR_MEM:begin
+				nmem_is_ld_st_ecall_inst=0;
 				nmem_is_inst_regwrite=0;
 				nis_mem_to_reg=0;
 				nmem_is_inst_valid=0;
@@ -158,6 +159,7 @@ enum {
 				nomem_is_ecall_inst=0;
 			end
 			MEM_READ_DONE:begin
+				nmem_is_ld_st_ecall_inst=mem_is_ld_st_ecall_inst;
 				nmem_is_inst_regwrite=mem_is_inst_regwrite;
 				nis_mem_to_reg=1;
 				nmem_is_inst_valid=mem_is_inst_valid;
@@ -168,6 +170,7 @@ enum {
 				nomem_is_ecall_inst=mem_is_ecall_inst;
 			end
 			MEM_WRITE_DONE: begin
+				nmem_is_ld_st_ecall_inst=mem_is_ld_st_ecall_inst;
 				nmem_is_inst_regwrite=mem_is_inst_regwrite;
 				nis_mem_to_reg=0;
 				nmem_is_inst_valid=mem_is_inst_valid;
@@ -178,6 +181,7 @@ enum {
 				nomem_is_ecall_inst=mem_is_ecall_inst;
 			end
 			NOMEM:begin
+				nmem_is_ld_st_ecall_inst=mem_is_ld_st_ecall_inst;
 				nmem_is_inst_regwrite=mem_is_inst_regwrite;
 				nis_mem_to_reg=0;
 				nmem_is_inst_valid=mem_is_inst_valid;

@@ -11,6 +11,8 @@ module register_file(
         input 	[4:0] 	irf_write_reg_num,
         input 	[63:0]	irf_write_data,
 	input	[63:0]	irf_stackptr,
+	input		irf_ldst_ec_stall,
+	input		irf_br_stall,	
 
         output	[63:0]	orf_read_data0,
         output	[63:0]	orf_read_data1,
@@ -28,10 +30,11 @@ module register_file(
 
 	logic	[6:0]	iter;
 	logic	[6:0]	niter;
+	logic		irf_already_stalling;
 
         always_comb 
 	begin
-	
+		irf_already_stalling=irf_ldst_ec_stall | irf_br_stall;
 		if(irf_read_reg_num0 == 0)
 			nrf_read_data0 = 0;
 		else
@@ -45,10 +48,14 @@ module register_file(
 
 	always_comb
 	begin //assuming reg0 will never be busy
-		if(!(busy[irf_read_reg_num0]) && !(busy[irf_read_reg_num1]) && !(busy[irf_hazchk_write_reg_num]))
-			orf_stall=0;
+		if(!irf_already_stalling) begin
+			if(!(busy[irf_read_reg_num0]) && !(busy[irf_read_reg_num1]) && !(busy[irf_hazchk_write_reg_num]))
+				orf_stall=0;
+			else
+				orf_stall=1;
+		end
 		else
-			orf_stall=1;
+			orf_stall=0;
 	end
 
 
@@ -83,7 +90,9 @@ module register_file(
 			orf_read_data0 <= nrf_read_data0;
 			orf_read_data1 <= nrf_read_data1;
 
+			if (!irf_already_stalling) begin
 			busy[irf_hazchk_write_reg_num] <= ndbusy;
+			end
 			busy[irf_write_reg_num] <= nwbusy;
 		
 			if (irf_write_reg_num > 0)

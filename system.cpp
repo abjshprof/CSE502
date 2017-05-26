@@ -186,7 +186,7 @@ void System::tick(int clk) {
                 cerr << "Invalid 64-byte access, address " << std::hex << xfer_addr << " is beyond end of memory at " << ramsize << endl;
                 Verilated::gotFinish(true);
             } else if (addr_to_tag.find(xfer_addr)!=addr_to_tag.end()) {
-                cerr << "Access for " << std::hex << xfer_addr << " already outstanding. Ignoring..." << endl;
+                //cerr << "Access for " << std::hex << xfer_addr << " already outstanding. Ignoring..." << endl;
             } else {
                 assert(
                         dramsim->addTransaction(isWrite, xfer_addr)

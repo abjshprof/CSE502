@@ -291,6 +291,22 @@ enum {
 		ex_word=  64'h00000000ffffffff;
 		ig_hword= 64'hffffffffffffffc0;
 		//ex_dword= 64'hffffffffffffffff;
+		
+		ndcache_bus_reqcyc=0;
+		ndcache_bus_respack=0;
+		ndcache_bus_req = 0;
+		ndcache_bus_reqtag = 0;
+		nodcache_read_done=0;
+		nodcache_write_done=0;
+		nodcache_write_ready=0;
+		nfill_count=0;
+		nevict_count=0;
+		ndcache_do_write=0;
+		nset=dtcache_memaddr.num_set; //later
+		nline=dcache[nset].lrul;
+		ndcache_offset=dtcache_memaddr.offset[5:3];
+		nodcache_rdata=dcache[nset].line[nline].data[ndcache_offset];
+
 		case(next_state)
 			IDLE: begin
 				ndcache_bus_reqcyc=0;
