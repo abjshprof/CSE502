@@ -1,3 +1,5 @@
+In this project, we design a CPU which implements the RV64IM set of the RISC-V architecture.
+
 1. Building/Running your simulator code
 
    Following are the commands to build and run the code:
